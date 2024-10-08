@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meetingraum Buchung</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #F5F5F5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        header {
+            text-align: center;
+            background-color: #84BD22;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            margin: 0;
+            color: #fff;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+        .date-header {
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+        }
+        .day-column {
+            display: flex;
+            flex-direction: column;
+        }
+        .day-header {
+            text-align: center;
+            background-color: #299E8E;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .time-block {
+            border: 1px solid #299E8E;
+            border-radius: 5px;
+            padding: 10px;
+            transition: background-color 0.3s;
+            cursor: pointer;
+            background-color: white;
+            text-align: center;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: black;
+            margin-bottom: 10px;
+        }
+        .booked-internal {
+            background-color: #86BB22;
+        }
+        .booked-external {
+            background-color: #299E8E;
+        }
+        .modal, .confirm-modal, .cancel-confirm-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content, .confirm-modal-content, .cancel-confirm-modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 600px;
+            height: 400px;
+            text-align: center;
+            position: relative;
+        }
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #299E8E;
+        }
+        .btn-group, .modal-footer {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #84BD22;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            height: 50px;
+            margin: 0 5px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .btn:hover {
+            background-color: #299E8E;
+            transform: scale(1.05);
+        }
+        .close-btn {
+            background-color: #299E8E;
+            margin-top: 20px;
+        }
+        .feedback-popup {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #84BD22;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .room-details {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: left;
+        }
+        .room-details p {
+            margin: 0;
+        }
+        .booking-overview {
+            margin-top: 30px;
+        }
+        .booking-overview table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .booking-overview th, .booking-overview td {
+            padding: 10px;
+            border: 1px solid #299E8E;
+            text-align: left;
+        }
+        .booking-overview th {
+            background-color: #299E8E;
+            color: white;
+        }
+        .date-navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .date-navigation button {
+            background-color: #299E8E;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 0 10px;
+        }
+        .date-navigation button:hover {
+            background-color: #84BD22;
+        }
+        input[type="text"],
+        input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        select {
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Meetingraum 1 - Buchungssystem</h1>
+    </header>
+    <div class="container">
+        <div class="date-navigation">
+            <button id="previousWeek" aria-label="Vorherige Woche">&lt; Vorherige Woche</button>
+            <div class="date-header" id="currentDate" aria-live="polite"></div>
+            <select id="roomSelect" aria-label="Meetingraum auswählen">
+                <option value="1">Meetingraum 1</option>
+                <option value="2">Meetingraum 2</option>
+                <option value="3">Meetingraum 3</option>
+            </select>
+            <button id="nextWeek" aria-label="Nächste Woche">Nächste Woche &gt;</button>
+        </div>
+        <h2>Buchbare Zeiten (Wochenansicht)</h2>
+        <div class="grid" id="timeSlots">
+        </div>
+        <div class="room-details">
+            <p><strong>Maximale Teilnehmerzahl:</strong> 20</p>
+            <p><strong>Technische Ausstattung:</strong> Beamer, Whiteboard, Video-Konferenzsystem</p>
+            <p><strong>Snacks & Getränke:</strong> Verfügbar</p>
+        </div>
+
+        <div class="booking-overview">
+            <h2>Aktuelle Buchungen</h2>
+            <table id="bookingTable" aria-live="polite">
+                <thead>
+                    <tr>
+                        <th>Slot</th>
+                        <th>Meetingraum</th>
+                        <th>Name</th>
+                        <th>Abteilung</th>
+                        <th>Teilnehmer</th>
+                        <th>Art</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal" id="bookingModal" aria-hidden="true">
+        <div class="modal-content">
+            <span class="close" id="closeBookingModal">&times;</span>
+            <h3>Buchungsdetails eingeben</h3>
+            <input type="text" id="nameInput" placeholder="Ihr Name" required aria-label="Name eingeben">
+            <input type="text" id="departmentInput" placeholder="Ihre Abteilung" required aria-label="Abteilung eingeben">
+            <input type="number" id="participantsInput" placeholder="Anzahl der Teilnehmer" required aria-label="Teilnehmeranzahl eingeben">
+            <select id="meetingType" aria-label="Meetingtyp auswählen">
+                <option value="internal">Internes Meeting</option>
+                <option value="external">Externes Meeting</option>
+            </select>
+            <div class="btn-group">
+                <button class="btn" id="confirmBooking">Buchung bestätigen</button>
+                <button class="btn close-btn" id="closeModal">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="feedback-popup" id="feedbackPopup" aria-live="assertive">Buchung erfolgreich gespeichert!</div>
+
+    <script>
+        // Utility function for formatting time with leading zeros and 30-minute slots
+        function formatTime(start, end) {
+            const startHours = Math.floor(start);
+            const startMinutes = (start % 1 === 0.5) ? '30' : '00';
+            const endHours = Math.floor(end);
+            const endMinutes = (end % 1 === 0.5) ? '30' : '00';
+            return `${startHours.toString().padStart(2, '0')}:${startMinutes} - ${endHours.toString().padStart(2, '0')}:${endMinutes}`;
+        }
+
+        // Improved date calculation handling weeks properly
+        const currentDateElement = document.getElementById('currentDate');
+        const timeSlotsElement = document.getElementById('timeSlots');
+        let currentDate = new Date();
+
+        function updateWeekDays() {
+            timeSlotsElement.innerHTML = '';
+            const startOfWeek = new Date(currentDate);
+            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1);
+
+            const days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+            const times = [
+                [8, 8.5], [8.5, 9], [9, 9.5], [9.5, 10], [10, 10.5], [10.5, 11],
+                [11, 11.5], [11.5, 12], [12, 12.5], [12.5, 13], [13, 13.5], [13.5, 14],
+                [14, 14.5], [14.5, 15], [15, 15.5], [15.5, 16], [16, 16.5], [16.5, 17],
+                [17, 17.5], [17.5, 18], [18, 18.5]
+            ];
+
+            for (let i = 0; i < days.length; i++) {
+                const column = document.createElement('div');
+                column.classList.add('day-column');
+                const dayHeader = document.createElement('div');
+                dayHeader.classList.add('day-header');
+                const date = new Date(startOfWeek);
+                date.setDate(startOfWeek.getDate() + i);
+                dayHeader.textContent = `${days[i]} ${date.toLocaleDateString('de-DE')}`;
+                column.appendChild(dayHeader);
+
+                times.forEach(([start, end]) => {
+                    const timeBlock = document.createElement('div');
+                    timeBlock.classList.add('time-block');
+                    timeBlock.textContent = formatTime(start, end);
+                    column.appendChild(timeBlock);
+                });
+
+                timeSlotsElement.appendChild(column);
+            }
+
+            currentDateElement.textContent = `${startOfWeek.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}`;
+        }
+
+        document.getElementById('nextWeek').addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() + 7);
+            updateWeekDays();
+        });
+
+        document.getElementById('previousWeek').addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() - 7);
+            updateWeekDays();
+        });
+
+        updateWeekDays();
+
+        // Show feedback popup
+        function showFeedback() {
+            const feedbackPopup = document.getElementById('feedbackPopup');
+            feedbackPopup.style.display = 'block';
+            feedbackPopup.style.opacity = '1';
+            setTimeout(() => {
+                feedbackPopup.style.opacity = '0';
+                setTimeout(() => feedbackPopup.style.display = 'none', 500);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
